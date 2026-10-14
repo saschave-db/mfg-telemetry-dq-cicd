@@ -1,0 +1,163 @@
+# Manufacturing telemetry: Zerobus + Auto Loader ingestion, SDP with expectations, CI/CD across environments.
+# See docs/ENVIRONMENTS.md for how the targets below map to workspaces and how promotion works.
+bundle:
+  name: mfg-telemetry-dq
+
+include:
+  - resources/*.yml
+
+# Only what runs in the workspace is uploaded.
+sync:
+  exclude:
+    - docs/**
+    - evidence/**
+    - .github/**
+
+variables:
+  catalog:
+    description: Unity Catalog catalog for this environment
+  schema:
+    description: Schema for all tables of this environment (development mode adds a per-user prefix)
+    default: telemetry
+  zerobus_endpoint:
+    description: Zerobus server endpoint of the target workspace (<workspace-id>.zerobus.<region>.cloud.databricks.com)
+  zerobus_sp_app_id:
+    description: Application id of the service principal the plant gateways use for Zerobus
+  secret_scope:
+    description: Secret scope with zerobus_client_id / zerobus_client_secret (used by the test generator)
+    default: pdm-demo
+  pipeline_continuous:
+    description: Continuous in production (live plants), triggered elsewhere (cheap, testable)
+    default: false
+  max_hard_violation_rate:
+    description: DQ gate threshold. Above this share of quarantined rows the gate job fails
+    default: "0.05"
+  monitor_pause_status:
+    description: Schedule state of the hourly DQ monitor
+    default: PAUSED
+  notification_email:
+    description: Receives pipeline and DQ gate failure notifications
+    default: <your-email>
+
+permissions:
+  - level: CAN_MANAGE
+    user_name: ${workspace.current_user.userName}
+  - level: CAN_VIEW
+    group_name: users
+
+targets:
+  # Each developer gets an isolated copy: [dev <user>] prefixes on jobs and pipelines, a per-user schema,
+  # paused schedules, and a pipeline in development mode. Default target for `databricks bundle deploy`.
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://<workspace-host>
+    variables:
+      catalog: <catalog>
+      zerobus_endpoint: <workspace-id>.zerobus.<region>.cloud.databricks.com
+      zerobus_sp_app_id: <gateway-sp-application-id>
+    # Test harness: only dev and staging get the generator and the integration test. Prod never does.
+    resources: &test_harness
+      jobs:
+        tlm_generator:
+          name: tlm_generator
+          max_concurrent_runs: 1
+          parameters:
+            - name: sink
+              default: both
+            - name: duration_min
+              default: "3"
+            - name: bad_record_rate
+              default: "0.02"
+          tasks:
+            - task_key: generate
+              environment_key: gateway
+              spark_python_task:
+                python_file: ./src/generator/generate.py
+                parameters:
+                  - --src-path=${workspace.file_path}/src
+                  - --catalog=${var.catalog}
+                  - --schema=${resources.schemas.telemetry.name}
+                  - --zerobus-endpoint=${var.zerobus_endpoint}
+                  - --secret-scope=${var.secret_scope}
+                  - --sink={{job.parameters.sink}}
+                  - --duration-min={{job.parameters.duration_min}}
+                  - --bad-record-rate={{job.parameters.bad_record_rate}}
+                  - --run-tag={{job.run_id}}
+          environments:
+            - environment_key: gateway
+              spec:
+                environment_version: "4"
+                dependencies:
+                  - databricks-zerobus-ingest-sdk>=1.0.0
+                  - databricks-sdk>=0.81.0
+        tlm_integration_test:
+          name: tlm_integration_test
+          max_concurrent_runs: 1
+          parameters:
+            - name: bad_record_rate
+              default: "0.02"
+          tasks:
+            - task_key: setup
+              run_job_task:
+                job_id: ${resources.jobs.tlm_setup.id}
+            - task_key: generate
+              depends_on:
+                - task_key: setup
+              run_job_task:
+                job_id: ${resources.jobs.tlm_generator.id}
+                job_parameters:
+                  sink: both
+                  duration_min: "3"
+                  bad_record_rate: "{{job.parameters.bad_record_rate}}"
+            - task_key: pipeline_update
+              depends_on:
+                - task_key: generate
+              pipeline_task:
+                pipeline_id: ${resources.pipelines.tlm_pipeline.id}
+            - task_key: dq_gate
+              depends_on:
+                - task_key: pipeline_update
+              notebook_task:
+                notebook_path: ./src/notebooks/dq_gate.sql
+                base_parameters:
+                  catalog: ${var.catalog}
+                  schema: ${resources.schemas.telemetry.name}
+                  mode: update
+                  reconcile: "true"
+                  manifest_path: /Volumes/${var.catalog}/${resources.schemas.telemetry.name}/${resources.volumes.landing.name}/_manifests
+                  max_hard_violation_rate: ${var.max_hard_violation_rate}
+
+  # Pre-production: production mode (no prefixes, schedules honored, pipeline not in development mode),
+  # same code as prod. In this demo it shares the dev workspace with its own schema. With a separate
+  # staging workspace, only `workspace.host` and the variables change.
+  staging:
+    mode: production
+    workspace:
+      host: https://<workspace-host>
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      catalog: <catalog>
+      schema: telemetry_staging
+      zerobus_endpoint: <workspace-id>.zerobus.<region>.cloud.databricks.com
+      zerobus_sp_app_id: <gateway-sp-application-id>
+    resources: *test_harness
+
+  # Production: its own workspace and catalog, deployed only by CI as a service principal,
+  # continuous pipeline, hourly DQ monitor on. Replace the placeholders before the first deploy.
+  prod:
+    mode: production
+    workspace:
+      host: https://<prod-workspace>.cloud.databricks.com
+      root_path: /Workspace/Shared/.bundle/${bundle.name}/${bundle.target}
+    run_as:
+      service_principal_name: <prod-deployer-sp-application-id>
+    variables:
+      catalog: mfg_prod
+      zerobus_endpoint: <prod-workspace-id>.zerobus.<region>.cloud.databricks.com
+      zerobus_sp_app_id: <prod-gateway-sp-application-id>
+      pipeline_continuous: true
+      monitor_pause_status: UNPAUSED
+      max_hard_violation_rate: "0.01"
+      notification_email: mfg-data-oncall@example.com

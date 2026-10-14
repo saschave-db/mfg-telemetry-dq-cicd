@@ -1,0 +1,32 @@
+Name: mfg-telemetry-dq
+Target: dev
+Workspace:
+  Host: https://<workspace-host>
+  User: <your-email>
+  Path: /Workspace/Users/<your-email>/.bundle/mfg-telemetry-dq/dev
+Resources:
+  Jobs:
+    tlm_dq_monitor:
+      Name: [dev <user>] tlm_dq_monitor
+      URL:  https://<workspace-host>/jobs/<job-id>?w=<workspace-id>
+    tlm_generator:
+      Name: [dev <user>] tlm_generator
+      URL:  https://<workspace-host>/jobs/<job-id>?w=<workspace-id>
+    tlm_integration_test:
+      Name: [dev <user>] tlm_integration_test
+      URL:  https://<workspace-host>/jobs/<job-id>?w=<workspace-id>
+    tlm_setup:
+      Name: [dev <user>] tlm_setup
+      URL:  https://<workspace-host>/jobs/<job-id>?w=<workspace-id>
+  Pipelines:
+    tlm_pipeline:
+      Name: [dev <user>] tlm_telemetry_pipeline
+      URL:  https://<workspace-host>/pipelines/<dev-pipeline-id>?w=<workspace-id>
+  Schemas:
+    telemetry:
+      Name: dev_<user>_telemetry
+      URL:  https://<workspace-host>/explore/data/<catalog>/dev_<user>_telemetry?w=<workspace-id>
+  Volumes:
+    landing:
+      Name: landing
+      URL:  https://<workspace-host>/explore/data/volumes/<catalog>/dev_<user>_telemetry/landing?w=<workspace-id>

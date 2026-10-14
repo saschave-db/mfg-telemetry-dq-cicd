@@ -1,0 +1,58 @@
+{
+  "target": "staging",
+  "mode": "production",
+  "workspace_root": "/Workspace/Users/<your-email>/.bundle/mfg-telemetry-dq/staging",
+  "schema": "telemetry_staging",
+  "pipeline": {
+    "name": "tlm_telemetry_pipeline",
+    "development": null,
+    "continuous": false,
+    "serverless": true,
+    "catalog": "<catalog>",
+    "schema": "${resources.schemas.telemetry.name}",
+    "libraries": [
+      {
+        "file": {
+          "path": "/Workspace/Users/<your-email>/.bundle/mfg-telemetry-dq/staging/files/src/pipeline/telemetry_pipeline.sql"
+        }
+      },
+      {
+        "file": {
+          "path": "/Workspace/Users/<your-email>/.bundle/mfg-telemetry-dq/staging/files/src/pipeline/bronze_dedup.py"
+        }
+      }
+    ],
+    "event_log": {
+      "catalog": "<catalog>",
+      "name": "pipeline_event_log",
+      "schema": "${resources.schemas.telemetry.name}"
+    },
+    "configuration": {
+      "tlm.landing_path": "/Volumes/<catalog>/${resources.schemas.telemetry.name}/${resources.volumes.landing.name}/telemetry",
+      "tlm.ref_table": "<catalog>.${resources.schemas.telemetry.name}.ref_station_master",
+      "tlm.zerobus_table": "<catalog>.${resources.schemas.telemetry.name}.telemetry_zerobus_raw"
+    }
+  },
+  "jobs": {
+    "tlm_dq_monitor": {
+      "name": "tlm_dq_monitor",
+      "schedule": {
+        "pause_status": "PAUSED",
+        "quartz_cron_expression": "0 5 * * * ?",
+        "timezone_id": "UTC"
+      }
+    },
+    "tlm_generator": {
+      "name": "tlm_generator",
+      "schedule": null
+    },
+    "tlm_integration_test": {
+      "name": "tlm_integration_test",
+      "schedule": null
+    },
+    "tlm_setup": {
+      "name": "tlm_setup",
+      "schedule": null
+    }
+  }
+}

@@ -1,0 +1,24 @@
+resources:
+  jobs:
+    tlm_dq_monitor:
+      name: tlm_dq_monitor
+      description: Hourly data-quality check of the last hour of the (continuous) pipeline. Fails and notifies above the threshold.
+      schedule:
+        quartz_cron_expression: "0 5 * * * ?"
+        timezone_id: UTC
+        pause_status: ${var.monitor_pause_status}
+      email_notifications:
+        on_failure:
+          - ${var.notification_email}
+      tasks:
+        - task_key: dq_gate
+          notebook_task:
+            notebook_path: ../src/notebooks/dq_gate.sql
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${resources.schemas.telemetry.name}
+              mode: window
+              lookback_hours: "1"
+              reconcile: "false"
+              manifest_path: /Volumes/${var.catalog}/${resources.schemas.telemetry.name}/${resources.volumes.landing.name}/_manifests
+              max_hard_violation_rate: ${var.max_hard_violation_rate}

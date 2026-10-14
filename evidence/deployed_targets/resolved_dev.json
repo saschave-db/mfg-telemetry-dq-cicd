@@ -1,0 +1,58 @@
+{
+  "target": "dev",
+  "mode": "development",
+  "workspace_root": "/Workspace/Users/<your-email>/.bundle/mfg-telemetry-dq/dev",
+  "schema": "dev_<user>_telemetry",
+  "pipeline": {
+    "name": "[dev <user>] tlm_telemetry_pipeline",
+    "development": true,
+    "continuous": false,
+    "serverless": true,
+    "catalog": "<catalog>",
+    "schema": "${resources.schemas.telemetry.name}",
+    "libraries": [
+      {
+        "file": {
+          "path": "/Workspace/Users/<your-email>/.bundle/mfg-telemetry-dq/dev/files/src/pipeline/telemetry_pipeline.sql"
+        }
+      },
+      {
+        "file": {
+          "path": "/Workspace/Users/<your-email>/.bundle/mfg-telemetry-dq/dev/files/src/pipeline/bronze_dedup.py"
+        }
+      }
+    ],
+    "event_log": {
+      "catalog": "<catalog>",
+      "name": "pipeline_event_log",
+      "schema": "${resources.schemas.telemetry.name}"
+    },
+    "configuration": {
+      "tlm.landing_path": "/Volumes/<catalog>/${resources.schemas.telemetry.name}/${resources.volumes.landing.name}/telemetry",
+      "tlm.ref_table": "<catalog>.${resources.schemas.telemetry.name}.ref_station_master",
+      "tlm.zerobus_table": "<catalog>.${resources.schemas.telemetry.name}.telemetry_zerobus_raw"
+    }
+  },
+  "jobs": {
+    "tlm_dq_monitor": {
+      "name": "[dev <user>] tlm_dq_monitor",
+      "schedule": {
+        "pause_status": "PAUSED",
+        "quartz_cron_expression": "0 5 * * * ?",
+        "timezone_id": "UTC"
+      }
+    },
+    "tlm_generator": {
+      "name": "[dev <user>] tlm_generator",
+      "schedule": null
+    },
+    "tlm_integration_test": {
+      "name": "[dev <user>] tlm_integration_test",
+      "schedule": null
+    },
+    "tlm_setup": {
+      "name": "[dev <user>] tlm_setup",
+      "schedule": null
+    }
+  }
+}

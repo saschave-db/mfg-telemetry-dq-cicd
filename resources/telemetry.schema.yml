@@ -1,0 +1,11 @@
+resources:
+  schemas:
+    telemetry:
+      catalog_name: ${var.catalog}
+      name: ${var.schema}
+      comment: Plant telemetry (synthetic) - bronze, silver, quarantine, gold, pipeline event log
+      grants:
+        - principal: ${var.zerobus_sp_app_id}
+          privileges:
+            - USE_SCHEMA
+

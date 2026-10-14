@@ -1,0 +1,33 @@
+resources:
+  pipelines:
+    tlm_pipeline:
+      name: tlm_telemetry_pipeline
+      catalog: ${var.catalog}
+      schema: ${resources.schemas.telemetry.name}
+      serverless: true
+      photon: true
+      channel: CURRENT
+      continuous: ${var.pipeline_continuous}
+      root_path: ../src/pipeline
+      libraries:
+        - file:
+            path: ../src/pipeline/telemetry_pipeline.sql
+        - file:
+            path: ../src/pipeline/bronze_dedup.py
+      # Referenced in the SQL as ${tlm.*}
+      configuration:
+        tlm.landing_path: /Volumes/${var.catalog}/${resources.schemas.telemetry.name}/${resources.volumes.landing.name}/telemetry
+        tlm.zerobus_table: ${var.catalog}.${resources.schemas.telemetry.name}.telemetry_zerobus_raw
+        tlm.ref_table: ${var.catalog}.${resources.schemas.telemetry.name}.ref_station_master
+      # Event log as a UC table: expectation metrics become queryable by the DQ gate, dashboards and alerts.
+      event_log:
+        catalog: ${var.catalog}
+        schema: ${resources.schemas.telemetry.name}
+        name: pipeline_event_log
+      notifications:
+        - email_recipients:
+            - ${var.notification_email}
+          alerts:
+            - on-update-failure
+            - on-update-fatal-failure
+            - on-flow-failure

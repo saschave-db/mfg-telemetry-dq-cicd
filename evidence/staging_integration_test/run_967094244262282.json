@@ -1,0 +1,76 @@
+{
+  "job_id": "<job-id>",
+  "run_id": 967094244262282,
+  "run_name": "tlm_integration_test",
+  "run_page_url": "https://<workspace-host>/?o=<workspace-id>#job/<job-id>/run/967094244262282",
+  "state": {
+    "life_cycle_state": "TERMINATED",
+    "result_state": "SUCCESS",
+    "state_message": "",
+    "user_cancelled_or_timedout": false
+  },
+  "status": {
+    "state": "TERMINATED",
+    "termination_details": {
+      "code": "SUCCESS",
+      "message": "",
+      "type": "SUCCESS"
+    }
+  },
+  "start_time": "2026-10-14T00:47:04.559000+00:00",
+  "end_time": "2026-10-14T00:54:16.482000+00:00",
+  "tasks": [
+    {
+      "task_key": "setup",
+      "run_id": 879323961272387,
+      "state": {
+        "life_cycle_state": "TERMINATED",
+        "result_state": "SUCCESS",
+        "state_message": "",
+        "user_cancelled_or_timedout": false
+      },
+      "start_time": "2026-10-14T00:47:04.625000+00:00",
+      "end_time": "2026-10-14T00:47:43.938000+00:00",
+      "duration_s": 39.3
+    },
+    {
+      "task_key": "generate",
+      "run_id": 941511468043480,
+      "state": {
+        "life_cycle_state": "TERMINATED",
+        "result_state": "SUCCESS",
+        "state_message": "",
+        "user_cancelled_or_timedout": false
+      },
+      "start_time": "2026-10-14T00:47:44.184000+00:00",
+      "end_time": "2026-10-14T00:51:16.170000+00:00",
+      "duration_s": 212.0
+    },
+    {
+      "task_key": "pipeline_update",
+      "run_id": 423253784011212,
+      "state": {
+        "life_cycle_state": "TERMINATED",
+        "result_state": "SUCCESS",
+        "state_message": "",
+        "user_cancelled_or_timedout": false
+      },
+      "start_time": "2026-10-14T00:51:16.463000+00:00",
+      "end_time": "2026-10-14T00:53:08.949000+00:00",
+      "duration_s": 112.5
+    },
+    {
+      "task_key": "dq_gate",
+      "run_id": 637202464553055,
+      "state": {
+        "life_cycle_state": "TERMINATED",
+        "result_state": "SUCCESS",
+        "state_message": "",
+        "user_cancelled_or_timedout": false
+      },
+      "start_time": "2026-10-14T00:53:09.179000+00:00",
+      "end_time": "2026-10-14T00:54:16.009000+00:00",
+      "duration_s": 66.8
+    }
+  ]
+}

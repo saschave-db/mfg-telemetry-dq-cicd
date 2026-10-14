@@ -1,0 +1,37 @@
+{
+  "job_id": "<job-id>",
+  "run_id": 950373750016738,
+  "run_name": "tlm_generator",
+  "run_page_url": "https://<workspace-host>/?o=<workspace-id>#job/<job-id>/run/950373750016738",
+  "state": {
+    "life_cycle_state": "TERMINATED",
+    "result_state": "SUCCESS",
+    "state_message": "",
+    "user_cancelled_or_timedout": false
+  },
+  "status": {
+    "state": "TERMINATED",
+    "termination_details": {
+      "code": "SUCCESS",
+      "message": "",
+      "type": "SUCCESS"
+    }
+  },
+  "start_time": "2026-10-14T00:47:45.062000+00:00",
+  "end_time": "2026-10-14T00:51:14.366000+00:00",
+  "tasks": [
+    {
+      "task_key": "generate",
+      "run_id": 30152247062203,
+      "state": {
+        "life_cycle_state": "TERMINATED",
+        "result_state": "SUCCESS",
+        "state_message": "",
+        "user_cancelled_or_timedout": false
+      },
+      "start_time": "2026-10-14T00:47:45.095000+00:00",
+      "end_time": "2026-10-14T00:51:13.947000+00:00",
+      "duration_s": 208.9
+    }
+  ]
+}

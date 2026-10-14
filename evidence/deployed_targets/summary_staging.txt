@@ -1,0 +1,32 @@
+Name: mfg-telemetry-dq
+Target: staging
+Workspace:
+  Host: https://<workspace-host>
+  User: <your-email>
+  Path: /Workspace/Users/<your-email>/.bundle/mfg-telemetry-dq/staging
+Resources:
+  Jobs:
+    tlm_dq_monitor:
+      Name: tlm_dq_monitor
+      URL:  https://<workspace-host>/jobs/<job-id>?w=<workspace-id>
+    tlm_generator:
+      Name: tlm_generator
+      URL:  https://<workspace-host>/jobs/<job-id>?w=<workspace-id>
+    tlm_integration_test:
+      Name: tlm_integration_test
+      URL:  https://<workspace-host>/jobs/<job-id>?w=<workspace-id>
+    tlm_setup:
+      Name: tlm_setup
+      URL:  https://<workspace-host>/jobs/<job-id>?w=<workspace-id>
+  Pipelines:
+    tlm_pipeline:
+      Name: tlm_telemetry_pipeline
+      URL:  https://<workspace-host>/pipelines/<staging-pipeline-id>?w=<workspace-id>
+  Schemas:
+    telemetry:
+      Name: telemetry_staging
+      URL:  https://<workspace-host>/explore/data/<catalog>/telemetry_staging?w=<workspace-id>
+  Volumes:
+    landing:
+      Name: landing
+      URL:  https://<workspace-host>/explore/data/volumes/<catalog>/telemetry_staging/landing?w=<workspace-id>

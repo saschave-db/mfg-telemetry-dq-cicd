@@ -1,0 +1,65 @@
+# CI/CD for the telemetry bundle: validate -> staging (integration test with DQ gate) -> prod (approval).
+# Rules are tested where they run: in the SDP pipeline on Databricks, checked by the DQ gate.
+#
+# Authentication: one Databricks service principal per environment, stored as GitHub environment secrets
+# (DATABRICKS_HOST, DATABRICKS_CLIENT_ID, DATABRICKS_CLIENT_SECRET). Use OAuth M2M or workload identity
+# federation (OIDC) instead of personal tokens. The prod GitHub environment has required reviewers.
+name: bundle-ci-cd
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [staging, prod]
+    environment: ${{ matrix.target }}
+    env:
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+      DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
+      DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: databricks/setup-cli@main
+      - run: databricks bundle validate --strict -t ${{ matrix.target }}
+
+  deploy-staging:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+      DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
+      DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: databricks/setup-cli@main
+      - run: databricks bundle deploy -t staging
+      # Setup, synthetic data with injected defects through Zerobus and files, pipeline update, DQ gate.
+      # The job fails if any expectation result or reconciliation is off, which blocks the prod job below.
+      - run: databricks bundle run tlm_integration_test -t staging
+
+  deploy-prod:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    environment: prod   # required reviewers = manual approval gate
+    env:
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+      DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
+      DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: databricks/setup-cli@main
+      - run: databricks bundle deploy -t prod
+      - run: databricks bundle run tlm_setup -t prod   # idempotent: Zerobus table, grants, reference data
+      # The continuous pipeline picks up the new code on deploy. The hourly tlm_dq_monitor watches it.

@@ -1,0 +1,8 @@
+resources:
+  volumes:
+    landing:
+      catalog_name: ${var.catalog}
+      schema_name: ${resources.schemas.telemetry.name}
+      name: landing
+      volume_type: MANAGED
+      comment: Historian JSON-lines exports (telemetry/) and generator manifests (_manifests/)

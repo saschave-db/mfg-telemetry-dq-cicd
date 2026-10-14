@@ -1,0 +1,12 @@
+resources:
+  jobs:
+    tlm_setup:
+      name: tlm_setup
+      tasks:
+        - task_key: setup
+          notebook_task:
+            notebook_path: ../src/notebooks/00_setup.sql
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${resources.schemas.telemetry.name}
+              zerobus_sp: ${var.zerobus_sp_app_id}
